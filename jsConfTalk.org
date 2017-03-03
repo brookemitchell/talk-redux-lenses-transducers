@@ -1,1 +1,125 @@
-/Users/brooke/Dropbox/Mobile-Org/jsConfTalk.org
+* JS Conf talk
+** Mihi / Greeting
+   - Thank you to the conference organizers and other speakers
+     
+   - Especially those tackling topics, either technically or emotionally and those that address the wider definition of what our community means, sad I can't see them all. This is my first ever talk so thank-you for having me. I think the js community is wide and varied all levels and kinds of experience are important
+
+   - I'm Brooke Mitchell. 
+
+   - I've a developer who has been using JavaScript in earnest for maybe three years. 
+
+    - These are my experiences using lenses and transducers to simplify data manipulation in a redux app I built. 
+
+** Me and Redux / Clearing up nomenclature
+
+  - My last year I have been pretty heavily focused on react and redux. Don't worry this isn't a talk about react. This talk is a little about my experiences using redux. Really this talk is really about how to deal with pojos (plain old JavaScript objects) (A.K.A dictionaries, hash-maps) something we all use. 
+
+  -  From my experience object manipulation can seems to be one of the less glamorous corners of functional programming; which is actually handy because it skips a lot of prior knowledge expected and you should be able to use any of these techniques in your day-to-day programming. One thing you will notice when using redux, the architecture tends to channel you towards functional approaches, I think is largely due to the inspiration takes from the ELM architecture.
+
+  - Btw when I talk about objects in this talk, I mean pojos. eg {}. No fancy prototypal inheritance here. So since this talk is about my experiences using objects, this talk is about how we use objects, through keys. What are keys? Keys are probably one of the few things in computer science that I like the name of. They are the items that you provide to a hash function that unlock associated values.  So and when we talk about keys, there is something slightly magical and metaphorical about them. For that reason we should also consider them at a higher conceptual level and consult the master of keys, the one and only, DJ Khaled. [fn:4]
+    
+  - For those unfamiliar with the work of DJ Khaled, you could briefly describe him as a music mogul and internet celebrity. Perhaps his most impressive skill is to act like a human hash function, and I mean that in a positive way. He can make a meaningful connection between any two people. If you needed like Jay-Z and Ellen Degeneres on a rap track talk to DJ Khaled. So while Khaled is an important music producer, snapchat celebrity, motivational speaker but most importantly for this talk, he is someone who also has aphilosophy about keys. (play Khaled keys clip). Khaled describes his steps to success as 'keys' that open access to other keys, so perhaps in another life he dealt with deeply nested JSON responses, lame joke I'm sorry. 
+      
+** Struggling with a redux app
+
+ - Working recently on yet another web app I became certain that what makes a performant, reliable, secure app is how we treat our state, an obvious conclusion. What makes an app is how it juggles data.
+
+ - For redux in the real world that is typically one thing, a single object that gets passed around. Dealing with this object is where things get interesting, because the one wrinkle, and the golden, number one rule of redux, the rule that keeps the architecture so simple and gives it super powers, is your state value can never be mutated. Mutate and everything is ruined, your changes will be ignored anyway.[fn:3]  What is mutation? There are links on my slides properly discussing mutation posted to my github. [[https:github.com/brookemitchell][github link]]. The opposite of mutability is immutability, what is immutability, basically it means all keys and values of an object are unchangeable. In practice that means we need to return a fresh new copy of the object every time. [fn:2] ]
+
+#+BEGIN_SRC javascript 
+Object.assign({}, oldObject, newObject)
+#+END_SRC
+
+  - So as a user you'll the redux development experience involves a lot of property access for both getting and setting. But I would say this matters anywhere you deal with complex objects. Treating that object as immutable with make your life much easier.  And if you start using functional techniques in your js, like reduce and filter and map, the reduce function in particular, which you can build the others from, expects the accumulator to be treated as immutable for it to work. [[give example]]
+
+    Mutability makes things too complex, Rich Hickey - "When you mutate things in place, you introduce the concept of time"
+
+
+** Redux flow
+
+1. You call store.dispatch(action)
+2. The Redux store calls the reducer function you gave it.
+3. The Redux store saves the complete state tree returned by the root reducer.
+   ...
+4. You can subscribe to the store. 
+
+However with redux you provide the reducer function to the redux library and it will apply the function to actions you dispatch on your behalf.
+
+Here are some common cases... Example reducer, example selector. Note these are all in redux with no other libraries like react-redux that create subscribing components for you, usable with plain javascript or whatever library/framework you like.
+ 
+Coincidentally a 'reducer' in redux is effectively a 'reduce' for state, I like to think of it like so...
+
+#+BEGIN_SRC javascript 
+['ACTION 1', 'STOP_LOADING', 'ACTION 3']
+  .reduce((state, action) => {
+    if (action.type === 'STOP_LOADING') {
+      return Object.assign({}, state, {filter: all})
+    }
+    else return state
+    }
+  }, {loading: true, filter: all}
+)
+
+#+END_SRC
+** Show example app.
+ 
+Here is a redux reducer for this app, this is the function for setting the new shape of the state called every time an 'action' is dispatched. This is where we 
+
+
+ - Anyway back to the app I was building. Sadly it was built for a closed source security conscious environment. But here is an example of a small toy example that suffers from some of the problems that start to emerge as redux apps get larger. This issues emerge as the state tree grows larger and more complex. I still think a single state tree is still a good solution, as one thing I often notice is that disparate elements in the state tree have unexpected interdependencies. 
+- When going through the steps of building a redux app, apart from the boilerplate, you are essentially doing only two things, mapping that state to your view where it is required and writing reducers to update you state when actions are dispatched. Thats it, mapping and reducing.
+  
+
+- Mapping takes place in a funciton like this: 
+ eg mapStateToProps -  
+  
+
+- And reducing like so 
+
+ - These are some example selectors I made up where I started to feel like maintainability was going to become an issue. Don't worry it should all look like greek, this is pushing the limits of how much code I think should be on a slide by the way. this is using the Ramda library [[[http:ramda.com][link]]] and the Maybe type from Ramda Sanctuary . Both extremely cool libraries.
+
+- I don't think this code is bad, in fact I'm pretty proud of it, we've got applicatives, composition, point free style, all the functional buzzwords we're not going to worry about too much in this talk, so I will move the slide along quickly before people get hung up with whats happening. Its just its a lot of effort to get a data in the shape I wanted for a component. Now imagine about 20 of these that often compose together and you can appreciate we are getting into a
+
+#+BEGIN_SRC javascript 
+import R from 'ramda';
+import Maybe from 'ramda-sanctuary'
+
+export const otherColumnSummary$ = R.compose(
+  R.map(R.compose(R.objOf('other'), R.mergeAll)),
+  R.sequence(Maybe.of),
+  R.ap([ 
+    // ...$ === more selectors not shown here.
+    // eg const otherUsed$ = R.getIn(['other', 'used'])
+    otherUsed$,
+    otherTotal$,
+    otherPercentage$, 
+    R.always(Maybe({code: 'other'})])),
+  R.of,
+);
+#+END_SRC
+
+Testing takes care a lot of this, but I knew these needed a refactor.
+
+** Refactoring
+
+ This talk has examples from my experiences refactoring a redux app.
+ 
+** Keys conclusion
+
+  - So by 'keys' I mean two things, the first, more obviously, is the meaning of keys items to access values in an object. Secondly I mean keys in DJ Khaled's sense, as ways to open doors to further success. These are some of the more abstract pieces of advice based on things that I have learned, and based on Dj Khalid's key taxonomy, can be roughly divided into minor and major keys. Minor keys are often called 'tips' and concrete examples of things you can do to improve experience, things like, 'enable redux developer tools' or 'always surround yourself with pillows' that are practical tips based that can be directly copied to similar scenarios.
+      
+  - The second of Khalid's keys, Major Keys, are higher up on the levels of abstraction. Link Cheng Lou on the spectrum of abstraction, very important talk [fn:5], (power === access to other tree levels) these have more universal principles but are are harder to describe in concrete terms, they are often highly metaphorical or strange sounding in terms of domain specific language. for example 'secure the bag' or 'keep two kitchens running'. They may sound nonsensical without the appropriate knowledge but these kinds of advice are similar to old sayings, like 'yagni' in programming and take extra effort to apply to a concrete case but have a larger amount of potential.
+
+
+
+* Footnotes
+
+[fn:5] [[https://www.youtube.com/watch?v=mVVNJKv9esE][Cheng Lou - On the Spectrum of Abstraction at react-europe 2016]]
+
+[fn:4] DJ Khaled clips and sound
+
+[fn:3] Test this out.
+
+[fn:2] slite showing new object
+
+[fn:1] slide showing mutation
