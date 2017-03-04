@@ -20,7 +20,6 @@
  - For those unfamiliar with the work of DJ Khaled, you could briefly describe him as a music mogul and internet celebrity. Perhaps his most impressive skill is to act like a human hash function, and I mean that in a positive way. He can make a meaningful connection between any two people. Say you need Jay-Z and Snoop Dogg to catch a plane to your studio talk to DJ Khaled. So while Khaled is an important music producer, snapchat celebrity, motivational speaker but most importantly for this talk, he is someone who also has a philosophy about keys. (play Khaled keys clip). Khaled describes his steps to success as 'keys' that open access to other keys, so perhaps in another life he dealt with deeply nested JSON responses, lame joke I'm sorry. 
       
 * Explaining how to build a redux app
-*** Redux Flow
 *** Crash course in Redux
  - Anyway back to the app I was building. Sadly it was built for a closed source environment. But here is a smaller toy example that also shows some of the problems that as redux apps get larger. 
 
@@ -64,12 +63,13 @@ Take special note of the line that looks like this:
 return Object.assign({}, oldObject, newObject)
 #+END_SRC
 
-- Redux major key alert: don't mutate your state in a reducer. It's an effort that will be ignored anyway when the diff is performed anyway. [fn:3]  What is mutation? Here are some links properly discussing mutation on my slides which you can grab on github. [[https:github.com/brookemitchell][github link]]. Anyway the opposite of mutability is immutability, what is immutability, basically it means keys and values of an object are unchangeable. In practice that means we need to return a fresh new copy of the object every time. [fn:2] ]
+- Major key alert: don't mutate your state in a reducer. It's an effort that will be ignored anyway in the diff comparison. [fn:3]  What is mutation? Here are some links properly discussing mutation on my slides which you can grab on github. [[https:github.com/brookemitchell][github link]]. Anyway the opposite of mutability is immutability, what is immutability, basically it means keys and values of an object are unchangeable. In practice that means we need to return a fresh new copy of the object every time. [fn:2] ]
 
 *** Mapper
      
 Here is a redux mapping of state to a html output, this is pretty low-level and in reality react users tend to use higher-order-components like react-redux connect [[http:github.com/react-redux/react-redux][connect link]], but just to show you that you could happily use redux store in any scenario.
 
+This is a state mapper in hyperscript, a handy way to generate dom nodes directly.
 #+BEGIN_SRC js 
 import h from 'hyperscript'
 
@@ -81,19 +81,79 @@ store.subscribe(() => {
 #+END_SRC
 
 I think writing functions instead of jsx looks pretty nice. JSX is cool too though.
-State mappers are pretty much exactly the same for all libraries, I think of them like a .map that plucks only the desired items for an object. 
+
+State mappers are pretty much exactly the same for all libraries, I think of them like a .map where you plucks the desired items for an object. 
+
+This is a state mapper using nanocomponent. An very cool new component createion library that runs on any framework and performs well (using the same optimizations as react fiber). It should be compatable with all the frameworks and x-to-js compilers (even elm) and frees us from writing the same components like inifite list a zillion times.
 
 #+BEGIN_SRC js 
-  // nb. this won't acutally work, just my imagination
-  const currentState = store.getState()
-  const mapStateToProps = R.map(state => ({widgets: state.widgets}))
-  const props = mapStateToProps(state)
-  const WidgetList = <WidgetList widgetList={props.widgets} />
+const component = require('nanocomponent')
+const html = require('bel')
+
+const mapStateToProps = state => ({widgets: state.widgets})
+const props = mapStateToProps(store.getState())
+
+var WidgetList = component({
+  render: function (props) {
+    return html`
+      <ul>${props.widgets.map(e => html`<li>${e}</li>`)}</ul>
+    `
+  }
+})
 #+END_SRC
 
+Anyway dispatch, reduce, map. That is my summary of redux, so enough of that.
 
 * Real world
-- Ok so that was enough explaning redux. Hopefully you can now see that setting state is the same as applying a reducing function, and getting state is similar to a mapping over state and plucking entries you care about out.
+- Hopefully you can now see that setting state is the same as applying a reducing function, and getting state is similar to a mapping over state and plucking entries you care about out.
+
+**** Refactoring mapStateToProps
+
+#+BEGIN_SRC js 
+function setText (state, action) {...}
+
+export default function works(state = initialState, action) {
+  switch (action.type) {
+    case WORKS_FETCH_FAILED: {
+      return {
+        ...state,
+        appState: "error",
+        error: action.message
+      };
+    }
+    case SET_TEXT: {
+    setText(state, action)
+    }
+    default:
+      return state;
+  }
+}
+#+END_SRC
+
+- And here is a troubled mapper. In my toy example as is often the case things weren't looking real world enough, so I decided to add the classic real world case of users provided by a router. Again you dont need to read this, just get a bad feeling.
+
+#+BEGIN_SRC js 
+const mapStateToProps = (state, props) => {
+  const user = state.users[props.routeParams.uid]
+  const userDetails = state.usersDetails[user.uid]
+  return {
+    userDetails,
+    noUser: typeof user === 'undefined',
+    name: noUser ? '' : user.info.name,
+    lastupdatedUser: user ? user.lastUpdated : 0,
+    isFetching: user.isFetching || usersDetails.isFetching,
+    error: users.error || usersDucks.error,
+    works: state.works.works,
+    sending: state.works.sending,
+    works: state.works.error,
+    editing: R.propOr([], 0)(R.toPairs(state.works.editing))
+  };
+};
+#+END_SRC
+- For a quick glance this looks like way too much business logic to have in a view. Also all this nested parameter access is sure to cause runtime errors if a property isn't available at a certain point in time.
+
+
+Testing takes care a lot of this, but I knew these needed a refactor.
 
  - Here is the real reducer for the roadworks editing app, this is the function for setting the new shape of the state called every time an 'action' is dispatched. 
 
@@ -131,38 +191,7 @@ export default function works(state = initialState, action) {
   }
 }
 #+END_SRC
-
-- Mapping takes place in a funciton like this: 
- eg mapStateToProps -  
-  
-
-  - So as a user you'll the redux development experience involves a lot of property access for both getting and setting. But I would say this matters anywhere you deal with complex objects. Treating that object as immutable with make your life much easier.  And if you start using functional techniques in your js, like reduce and filter and map, the reduce function in particular, which you can build the others from, expects the accumulator to be treated as immutable for it to work. [[give example]]
-
- 
-
- - These are some example selectors I made up where I started to feel like maintainability was going to become an issue. Don't worry it should all look like greek, this is pushing the limits of how much code I think should be on a slide by the way. this is using the Ramda library [[[http:ramda.com][link]]] and the Maybe type from Ramda Sanctuary . Both extremely cool libraries.
-
-- I don't think this code is bad, in fact I'm pretty proud of it, we've got applicatives, composition, point free style, all the functional buzzwords we're not going to worry about too much in this talk, so I will move the slide along quickly before people get hung up with whats happening. Its just its a lot of effort to get a data in the shape I wanted for a component. Now imagine about 20 of these that often compose together and you can appreciate we are getting into a
-
-#+BEGIN_SRC javascript 
-import R from 'ramda';
-import Maybe from 'ramda-sanctuary'
-
-export const otherColumnSummary$ = R.compose(
-  R.map(R.compose(R.objOf('other'), R.mergeAll)),
-  R.sequence(Maybe.of),
-  R.ap([ 
-    // ...$ === more selectors not shown here.
-    // eg const otherUsed$ = R.getIn(['other', 'used'])
-    otherUsed$,
-    otherTotal$,
-    otherPercentage$, 
-    R.always(Maybe({code: 'other'})])),
-  R.of,
-);
-#+END_SRC
-
-Testing takes care a lot of this, but I knew these needed a refactor.
+- I think this is a little much for one function. The advice from redux is to break functions out, and I think you can easily see how to do that. It makes things easier to read but doestnt actually reduce lines of code, which I think is the real issue here.
 
 * Refactoring
 
