@@ -111,7 +111,6 @@ Anyway dispatch, reduce, map. That is my summary of redux, so enough of that.
 **** Intro
 - Hopefully you can now see that setting state is the same as applying a reducing function, and getting state is similar to a mapping over state and plucking entries you care about out.
 **** Refactoring mapStateToProps
-
 ***** Starting point
 - And here is a troubled mapper. In my toy example as is often the case things weren't looking real world enough, so I decided to implement some feature creep, user management and routing. Again you dont need to read this, just get a bad feeling that all this logic shouldn't really be in a view.
 
@@ -184,9 +183,8 @@ const mapStateToProps = stateToProps$(store.getState())
 
  - wayyy sweeter. 
 ***** Reselect  
-The alternative route to composing selectors is to use a selector library like reselect. [[https://github.com/react/reselect][reselect link.]] You get effectively the same ability to compose selectors.
 
-The alternative route to composing selectors is to use a selector library like reselect. [[https://github.com/react/reselect][reselect link.]] You get the same ability to compose selectors in a library. You also get the win of createSelector memoizing the results for you. This means that if anytime the result from all the selectors is the same, createSelector doesn't bother calculating the state again, this should save a few cpu cycles but its not going to get you major speed ups in my experience, not like a virtualdom-diff for example.
+_ The alternative route to composing selectors is to use a selector library like reselect. [[https://github.com/react/reselect][reselect link.]] You get the same ability to compose selectors in a library. You also get the win of createSelector memoizing the results for you. This means that if anytime the result from all the selectors is the same, createSelector doesn't bother calculating the state again, this should save a few cpu cycles but in my experience doesn't offer major speed ups, not like a virtualdom-diff for example, but it's still nice not to create a new object every time.
 
 #+BEGIN_SRC js
 import { createSelector } from 'reselect'
@@ -214,7 +212,7 @@ const subtotalSelector = R.compose(
 )
 #+END_SRC
 
- We could just as easily use composition to create similar functionality and keep a lot of flexibility. In fact here is the same functionality as what I need from reselect, selector composition, in a ramda one-ish liner using applicatives. Try not to read this and just get a feeling that we've just composed together our own reselect library from existing pieces.
+Ok this is very close, and probably good enough for most scenarios. We could just as easily use composition to create similar functionality and keep a lot of flexibility. In fact here is the same functionality as what I need from reselect, selector composition, in a ramda one-ish liner using applicatives. Try not to read this and just get a feeling that we've just composed together our own reselect library from existing pieces.
 
 #+BEGIN_SRC js
 const createSelector = (...fns) => 
@@ -228,9 +226,22 @@ export const stateToProps$ = createSelector(
 )
 #+END_SRC
 
-This does the same thing as createSelector, takes the state, runs it through a list of selectors (except the last one) then applies those values to the last function, which has been memoized.
+- This does the same thing as createSelector, takes the state, runs it through a list of selectors (except the last one) then applies those values to the last function, which has been memoized.
 
-Now we get memoize and we dont have to learn another library. There are other capabilities reselect has which I've never used. Like props, you'll notice I pretty much never use props. Thats another key I've found, focus on state for stateful components and just use props with pure components to keep things simple. Things don't always work out that way but I find that really helps keep things simple. I have a more fully featured version of ramda-reselect that passes reselects test library in case you ever want to use it, or hopefully just look at the source, it's only a few lines more. 
+- Now we get memoize and we dont have to learn another library. There are other capabilities reselect has which I've never used. Like props, you'll notice I pretty much never use props.
+
+-  Thats another key I've found, focus on state for stateful components and just use props with pure components to keep things simple. Things don't always work out that way but I find that really helps keep things simple. 
+
+- I have a more fully featured version of ramda-reselect that passes reselects test library in case you ever want to use it, or hopefully just look at the source, it's only a few lines more. npm.com/ernusame/ramda-reselect
+  
+- So I feel like we've slimmed down our stateToProps mapper pretty nicely. (show again)
+#+BEGIN_SRC js
+export const stateToProps$ = createSelector(
+  name$, userDetails$, error$, editing$, R.mergeAll,
+)
+#+END_SRC
+
+Now lets take a look at our reducer.
 
 **** Refactoring reducer
 
@@ -297,6 +308,8 @@ export default function works(state = initialState, action) {
  - So by 'keys' I mean two things, the first, more obviously, is the meaning of keys items to access values in an object. Secondly I mean keys in DJ Khaled's sense, as ways to open doors to further success. These are some of the more abstract pieces of advice based on things that I have learned, and based on Dj Khalid's key taxonomy, can be roughly divided into minor and major keys. Minor keys are often called 'tips' and concrete examples of things you can do to improve experience, things like, 'enable redux developer tools' or 'always surround yourself with pillows' that are practical tips based that can be directly copied to similar scenarios.
       
  - The second of Khalid's keys, Major Keys, are higher up on the levels of abstraction. Link Cheng Lou on the spectrum of abstraction, very important talk [fn:5], (power === access to other tree levels) these have more universal principles but are are harder to describe in concrete terms, they are often highly metaphorical or strange sounding in terms of domain specific language. for example 'secure the bag' or 'keep two kitchens running'. They may sound nonsensical without the appropriate knowledge but these kinds of advice are similar to old sayings, like 'yagni' in programming and take extra effort to apply to a concrete case but have a larger amount of potential.
+   
+ - Alan Kay - Build things with knowledge and technique.
 
 
 
