@@ -19,6 +19,8 @@
     
  - For those unfamiliar with the work of DJ Khaled, you could briefly describe him as a music mogul and internet celebrity. Perhaps his most impressive skill is to act like a human hash function, and I mean that in a positive way. He can make a meaningful connection between any two people. Say you need Jay-Z and Snoop Dogg to catch a plane to your studio talk to DJ Khaled. So while Khaled is an important music producer, snapchat celebrity, motivational speaker but most importantly for this talk, he is someone who also has a philosophy about keys. (play Khaled keys clip). Khaled describes his steps to success as 'keys' that open access to other keys, so perhaps in another life he dealt with deeply nested JSON responses, lame joke I'm sorry. 
       
+   - I use Ramda and es6 style functions in the examples in this talk. I use ramda for three things really, auto-currying fn(arg1)(arg2), function composition (R.compose(z, y, x)/R.pipe(x, y, z)) and applicatives(R.ap([fn1, fn2, fn3])). This talk isn't really about ramda or trying to convince you to use it, but it is a useful grab bag of mostly time honoured functional programming tricks that  it is handy to be aware of.
+
 * Explaining how to build a redux app
 *** Crash course in Redux
  - Anyway back to the app I was building. Sadly it was built for a closed source environment. But here is a smaller toy example that also shows some of the problems that as redux apps get larger. 
@@ -74,9 +76,10 @@ This is a state mapper in hyperscript, a handy way to generate dom nodes directl
 import h from 'hyperscript'
 
 const widgetsList = widgets => h('div', h('ul', widgets.map(w => h('li', w))))
+let divWithState = h('div', h('text', 'loading...'))
 store.subscribe(() => {
   const currentState = store.getState()
-  const divWithState = widgetsList(currentState.widgets)
+  divWithState = widgetsList(currentState.widgets)
 })
 #+END_SRC
 
@@ -104,45 +107,25 @@ var WidgetList = component({
 
 Anyway dispatch, reduce, map. That is my summary of redux, so enough of that.
 
-* Real world
+* Refactoring a real app
+**** Intro
 - Hopefully you can now see that setting state is the same as applying a reducing function, and getting state is similar to a mapping over state and plucking entries you care about out.
-
 **** Refactoring mapStateToProps
 
-#+BEGIN_SRC js 
-function setText (state, action) {...}
-
-export default function works(state = initialState, action) {
-  switch (action.type) {
-    case WORKS_FETCH_FAILED: {
-      return {
-        ...state,
-        appState: "error",
-        error: action.message
-      };
-    }
-    case SET_TEXT: {
-    setText(state, action)
-    }
-    default:
-      return state;
-  }
-}
-#+END_SRC
-
-- And here is a troubled mapper. In my toy example as is often the case things weren't looking real world enough, so I decided to add the classic real world case of users provided by a router. Again you dont need to read this, just get a bad feeling.
+***** Starting point
+- And here is a troubled mapper. In my toy example as is often the case things weren't looking real world enough, so I decided to implement some feature creep, user management and routing. Again you dont need to read this, just get a bad feeling that all this logic shouldn't really be in a view.
 
 #+BEGIN_SRC js 
-const mapStateToProps = (state, props) => {
-  const user = state.users[props.routeParams.uid]
+const mapStateToProps = state => {
+  const user = state.users[state.routeParams.uid]
   const userDetails = state.usersDetails[user.uid]
   return {
     userDetails,
     noUser: typeof user === 'undefined',
     name: noUser ? '' : user.info.name,
-    lastupdatedUser: user ? user.lastUpdated : 0,
+    lastUpdatedUser: user ? user.lastUpdated : 0,
     isFetching: user.isFetching || usersDetails.isFetching,
-    error: users.error || usersDucks.error,
+    error: users.error || usersDetails.error,
     works: state.works.works,
     sending: state.works.sending,
     works: state.works.error,
@@ -150,10 +133,106 @@ const mapStateToProps = (state, props) => {
   };
 };
 #+END_SRC
-- For a quick glance this looks like way too much business logic to have in a view. Also all this nested parameter access is sure to cause runtime errors if a property isn't available at a certain point in time.
+- For a quick glance this looks like way too much business logic to have in a view. Also all this nested parameter access is sure to cause runtime errors if a property isn't available at a certain point in time. Key alert: use ramda/lodash 'get' instead.
+  
+***** Step one, create selectors
+- The first step taken is usually to get this property access out of the view and somewhere else. Usually I just make a selector file and work from there, it helps with testing, and we remove the any logic or intermediary functions from the view.
 
+#+BEGIN_SRC js 
+// selectors.js
+const user = state => state.users[state.routeParams.uid]
+const noUser = state =>  typeof user(state) === 'undefined'
+// ...$ = public selector
+export const userDetails$ = state => state.usersDetails[user(state)]
+export const name$ = state =>  noUser(state) ? '' 
+  : R.getIn(['info', 'name'], user(state))
+export const error$ = R.getIn(['works','error'])
+export const editing$ = R.propOr([], 0)(R.toPairs(state.works.editing))
+...
 
-Testing takes care a lot of this, but I knew these needed a refactor.
+//container.js
+const mapStateTo = (state) => {
+  return {
+    name: name$(state),
+    userDetails : userDetails$(state),
+    error: error$(state),
+    editing: editing$(state)
+  };
+};
+#+END_SRC
+
+- We could go further but good enough I say, at least these are easily composable and testable now. We could take this even further and create an uber selector that combines all the selectors. 
+***** Step Two: Composing with ramda
+Major key: compose selectors.
+
+#+BEGIN_SRC js 
+// selectors.js
+export const stateToProps$ = R.compose(
+  R.mergeAll,
+  R.ap([
+    name$,
+    userDetails$,
+    error$,
+    editing$
+    ]),
+  R.of,
+)
+
+//container.js
+const mapStateToProps = stateToProps$(store.getState())
+  #+END_SRC
+
+ - wayyy sweeter. 
+***** Reselect  
+The alternative route to composing selectors is to use a selector library like reselect. [[https://github.com/react/reselect][reselect link.]] You get effectively the same ability to compose selectors.
+
+The alternative route to composing selectors is to use a selector library like reselect. [[https://github.com/react/reselect][reselect link.]] You get the same ability to compose selectors in a library. You also get the win of createSelector memoizing the results for you. This means that if anytime the result from all the selectors is the same, createSelector doesn't bother calculating the state again, this should save a few cpu cycles but its not going to get you major speed ups in my experience, not like a virtualdom-diff for example.
+
+#+BEGIN_SRC js
+import { createSelector } from 'reselect'
+const isFetching = createSelector(
+  [ user, userDetails ],
+  (user, userDetails) => user.isFetching || usersDetails.isFetching,
+)
+
+export const stateToProps$ = createSelector(
+  [name$, userDetails$, error$, editing$],
+  R.mergeAll,
+)
+#+END_SRC
+
+***** Ramda Reselect  
+      
+My issue with reselect is it re-invents the wheel a bit when you could just take the time to learn composition and not sweat the difference when frameworks change.
+      
+#+BEGIN_SRC js
+const shopItemsSelector = state => state.shop.items
+
+const subtotalSelector = R.compose(
+  R.reduce((acc, item) => acc + item.value, 0)
+  shopItemsSelector,
+)
+#+END_SRC
+
+ We could just as easily use composition to create similar functionality and keep a lot of flexibility. In fact here is the same functionality as what I need from reselect, selector composition, in a ramda one-ish liner using applicatives. Try not to read this and just get a feeling that we've just composed together our own reselect library from existing pieces.
+
+#+BEGIN_SRC js
+const createSelector = (...fns) => 
+  R.compose(
+    , R.apply(R.memoize(R.last(fns))))
+    , R.ap(fns.slice(0, -1))
+    R.of
+
+export const stateToProps$ = createSelector(
+  name$, userDetails$, error$, editing$, R.mergeAll,
+)
+#+END_SRC
+
+This does the same thing as createSelector, takes the state, runs it through a list of selectors (except the last one) then applies those values to the last function, which has been memoized.
+
+Now we get memoize and we dont have to learn another library. There are other capabilities reselect has which I've never used. Like props, you'll notice I pretty much never use props. Thats another key I've found, focus on state for stateful components and just use props with pure components to keep things simple. Things don't always work out that way but I find that really helps keep things simple. I have a more fully featured version of ramda-reselect that passes reselects test library in case you ever want to use it, or hopefully just look at the source, it's only a few lines more. 
+
+**** Refactoring reducer
 
  - Here is the real reducer for the roadworks editing app, this is the function for setting the new shape of the state called every time an 'action' is dispatched. 
 
@@ -193,10 +272,26 @@ export default function works(state = initialState, action) {
 #+END_SRC
 - I think this is a little much for one function. The advice from redux is to break functions out, and I think you can easily see how to do that. It makes things easier to read but doestnt actually reduce lines of code, which I think is the real issue here.
 
-* Refactoring
+#+BEGIN_SRC js 
+function setText (state, action) {...}
 
-This talk has examples from my experiences refactoring a redux app.
- 
+export default function works(state = initialState, action) {
+  switch (action.type) {
+    case WORKS_FETCH_FAILED: {
+      return {
+        ...state,
+        appState: "error",
+        error: action.message
+      };
+    }
+    case SET_TEXT: {
+    setText(state, action)
+    }
+    default:
+      return state;
+  }
+}
+#+END_SRC
 * Keys conclusion
 
  - So by 'keys' I mean two things, the first, more obviously, is the meaning of keys items to access values in an object. Secondly I mean keys in DJ Khaled's sense, as ways to open doors to further success. These are some of the more abstract pieces of advice based on things that I have learned, and based on Dj Khalid's key taxonomy, can be roughly divided into minor and major keys. Minor keys are often called 'tips' and concrete examples of things you can do to improve experience, things like, 'enable redux developer tools' or 'always surround yourself with pillows' that are practical tips based that can be directly copied to similar scenarios.
