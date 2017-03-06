@@ -141,16 +141,14 @@ const mapStateToProps = state => {
 // selectors.js
 const user = state => state.users[state.routeParams.uid]
 const noUser = state =>  typeof user(state) === 'undefined'
-// ...$ = public selector
-export const userDetails$ = state => state.usersDetails[user(state)]
-export const name$ = state =>  noUser(state) ? '' 
-  : R.getIn(['info', 'name'], user(state))
-export const error$ = R.getIn(['works','error'])
-export const editing$ = R.propOr([], 0)(R.toPairs(state.works.editing))
-...
+const works$ =  state => state.works.works
+const editing = state => state.works.editing
+const editing$ =  R.compose(R.propOr([], 0),
+                                   R.toPairs,
+                                   editing)
 
 //container.js
-const mapStateTo = (state) => {
+export const mapStateTo = (state) => {
   return {
     name: name$(state),
     userDetails : userDetails$(state),
@@ -161,13 +159,14 @@ const mapStateTo = (state) => {
 #+END_SRC
 
 - We could go further but good enough I say, at least these are easily composable and testable now. We could take this even further and create an uber selector that combines all the selectors. 
+
 ***** Step Two: Composing with ramda
 Major key: compose selectors.
 
 #+BEGIN_SRC js 
 // selectors.js
 export const stateToProps$ = R.compose(
-  R.mergeAll,
+  R.zipObj(['name', 'userDetails', 'error', 'editing']),
   R.ap([
     name$,
     userDetails$,
@@ -180,11 +179,10 @@ export const stateToProps$ = R.compose(
 //container.js
 const mapStateToProps = stateToProps$(store.getState())
   #+END_SRC
-
- - wayyy sweeter. 
+ - Wayyy sweeter. tbh this is probably the sweet spot. Go deeper if needs require.
 ***** Reselect  
 
-_ The alternative route to composing selectors is to use a selector library like reselect. [[https://github.com/react/reselect][reselect link.]] You get the same ability to compose selectors in a library. You also get the win of createSelector memoizing the results for you. This means that if anytime the result from all the selectors is the same, createSelector doesn't bother calculating the state again, this should save a few cpu cycles but in my experience doesn't offer major speed ups, not like a virtualdom-diff for example, but it's still nice not to create a new object every time.
+_ The alternative route to composing selectors is to use a selector library like reselect. [[https://github.com/react/reselect] [reselect link]]  You get the same ability to compose selectors in a library. You also get the win of createSelector memoizing the results for you. This means that if anytime the result from all the selectors is the same, createSelector doesn't bother calculating the state again, this should save a few cpu cycles but in my experience doesn't offer major speed ups, not like a virtualdom-diff for example, but it's still nice not to create a new object every time.
 
 #+BEGIN_SRC js
 import { createSelector } from 'reselect'
@@ -287,29 +285,65 @@ export default function works(state = initialState, action) {
 function setText (state, action) {...}
 
 export default function works(state = initialState, action) {
-  switch (action.type) {
-    case WORKS_FETCH_FAILED: {
-      return {
-        ...state,
-        appState: "error",
-        error: action.message
-      };
-    }
+    ...
     case SET_TEXT: {
     setText(state, action)
     }
-    default:
-      return state;
-  }
+    ...
 }
 #+END_SRC
+
+- Thats nice but we're just pushing code around now. I'm not always sure shepherding code around into files is a good idea, to me it always feels a little dishonest. How about trying something else, an abstraction that allows you to target a specific part of a deeply nested object, then returns the entire object. I'm talking about:
+
+**** Lenses!
+     - W
+     - Here is a rewrite of the SET_TEXT actions reducing case.
+
+#+BEGIN_SRC js 
+    case SET_TEXT: {
+      const id = action.changedEntry.id;
+      const value = action.changedEntry[id];
+      const key = R.keys(action.changedEntry[id])[0]; // => 'type'
+      const worksItemLens = R.lensPath(['works', 'works', id])
+      return R.set(worksItemLens, value, state); //=> {works: {works: {160192: {id:"160192", code:"544989" type:"New Value"... }}}
+    }
+#+END_SRC
+
+To me this is way cleaner. And get ready for the second win, your lenses act as both getters and setters, so you get selectors for free when you write them. Major key. I stop thinking in terms of reducers now and just think of writing a selector as a lens when I need something, compose lenses together for my mapStateToProps,  and later I can use it to set the change I've dispatched in the reducer.
+
+One of the fun things about lenses is they look like they compose left to right. It's a little confusing  
+
+#+BEGIN_SRC js
+const userLens = R.lensProp('users')
+const uidLens = R.lensPath(['routeParams', 'uid'])
+export const userInfoLens = R.compose(userLens, uidLens)
+export const userNameLens = R.lensPath(['info', 'name'])
+export const nameLens = R.compose(userInfo, userNameLens)
+
+export const errorLens = R.lensPath(['works','error'])
+export const editingLens = R.lensPath(['works', 'editing'])
+
+const mapStateToProps =  R.compose(
+  R.mergeAll,
+  R.ap(R.map (R.view, 
+    [editingLens, errorLens, nameLens] ))
+  R.of, 
+);
+
+    case SET_EDITING: {
+      return R.over(worksItemLens,  , state); //=> {works: {works: {160192: {id:"160192", code:"544989" type:"New Value"... }}}
+    }
+#+END_SRC
+
 * Keys conclusion
 
  - So by 'keys' I mean two things, the first, more obviously, is the meaning of keys items to access values in an object. Secondly I mean keys in DJ Khaled's sense, as ways to open doors to further success. These are some of the more abstract pieces of advice based on things that I have learned, and based on Dj Khalid's key taxonomy, can be roughly divided into minor and major keys. Minor keys are often called 'tips' and concrete examples of things you can do to improve experience, things like, 'enable redux developer tools' or 'always surround yourself with pillows' that are practical tips based that can be directly copied to similar scenarios.
-      
- - The second of Khalid's keys, Major Keys, are higher up on the levels of abstraction. Link Cheng Lou on the spectrum of abstraction, very important talk [fn:5], (power === access to other tree levels) these have more universal principles but are are harder to describe in concrete terms, they are often highly metaphorical or strange sounding in terms of domain specific language. for example 'secure the bag' or 'keep two kitchens running'. They may sound nonsensical without the appropriate knowledge but these kinds of advice are similar to old sayings, like 'yagni' in programming and take extra effort to apply to a concrete case but have a larger amount of potential.
    
- - Alan Kay - Build things with knowledge and technique.
+- I've tried not to say that a technology or a technique is a key, I dont think lenses are better than mapping for example. Lenses have a lot of pitfalls and can be way overkill. But the approach that they represent, of simplifying by looking for similarity between mapping and reducing to refactor code is the key that I like. 
+      
+ - Major Keys, tend to be concepts that are higher up on the levels of abstraction. Link Cheng Lou on the spectrum of abstraction, very important talk [fn:5], (power === access to other tree levels) these have more universal principles but are are harder to describe in concrete terms, they are often highly metaphorical or strange sounding in terms of domain specific language. for example 'secure the bag' or 'keep two kitchens running'. They may sound nonsensical without the appropriate knowledge but these kinds of advice are similar to old sayings, like 'yagni' in programming and take extra effort to apply to a concrete case but have a larger amount of potential.
+   
+ - Alan Kay - Build things with knowledge and technique. Using a higher level form can remove loc in orders of magnitude, depending on choice of abstraction.
 
 
 
