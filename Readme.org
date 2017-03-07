@@ -11,14 +11,11 @@
   - Spoiler... there are tradeoffs when trying to simplify.
 
 * Slides and source code
-
 ** Slides
    [[https://github.com/brookemitchell/talk-redux-lenses-transducers]]
 ** Example Project with refactored branches
    https://github.com/brookemitchell/redux-lenses-example
-
 * Me and Redux
-
 ** {}
 
 - This isn't a talk about react.
@@ -32,7 +29,7 @@
     [[file:key3.jpg]]
 
 * DJ Khaled
-    #+ATTR_LATEX: width=\textwidth
+    # #+ATTR_LATEX: width=\textwidth
     [[file:khaled_imgs/keysbook.jpg]]
 * DJ Khaled
   #+ATTR_LATEX: width=\textwidth
@@ -93,6 +90,7 @@ const initialState = {loading: true, filter: all}
     }
   },  initialState)
 #+END_SRC
+    - Explaining Immutability [[https://medium.com/@roman01la/explaining-immutability-2aedc221b4c0][Link]]
 
 * DJ Khaled
     #+ATTR_LATEX: width=\textwidth
@@ -107,7 +105,7 @@ const widgetsList = widgets =>
       widgets.map(w => h('li', w))));
 let divWithState;
 store.subscribe(() => {
-  const currentState = store.getState();
+  const currentState = store.getState(); // => {widgets: [...]}
   divWithState = widgetsList(currentState.widgets);
 })
 #+END_SRC
@@ -115,7 +113,7 @@ store.subscribe(() => {
 * DJ Khaled
     #+ATTR_LATEX: width=\textwidth
     [[file:khaled_imgs/3.png]]
-* Redux Mapper
+* Redux Mapper 2
   - Same again using nanocomponent...
 #+BEGIN_SRC js 
 const component = require('nanocomponent');
@@ -178,7 +176,7 @@ export const mapStateTo = (state) => {
 * DJ Khaled
     #+ATTR_LATEX: width=\textwidth
     [[file:khaled_imgs/6.jpg]]
-* bad map fix, step 2: Composing with ramda
+* Bad map fix, step 2: Composing with ramda
 - Major key: compose selectors.
 #+BEGIN_SRC js 
 // selectors.js
@@ -199,7 +197,7 @@ const mapStateToProps = stateToProps$(store.getState())
     #+ATTR_LATEX: width=\textwidth
     [[file:khaled_imgs/7.jpg]]
 * Alternative Step 2: Reselect  
-
+  - https://github.com/react/reselect
 #+BEGIN_SRC js
 import { createSelector } from 'reselect'
 const isFetching = createSelector(
@@ -230,6 +228,15 @@ const createSelector = (...fns) =>
 
 #+END_SRC
 
+* Alternative Step 2.5: Ramda Reselect  
+- Mapper looks better now.
+#+BEGIN_SRC js
+export const stateToProps$ = createSelector(
+  name$, userDetails$, error$, editing$, 
+  (name$, userDetails$, error$, editing$) =>  
+    ({name, userDetails, error, editing})
+)
+#+END_SRC
 * DJ Khaled
     #+ATTR_LATEX: width=\textwidth
     [[file:khaled_imgs/9.jpg]]
@@ -338,8 +345,9 @@ function works(state = initialState, action) {
 * DJ Khaled
     #+ATTR_LATEX: width=\textwidth
     [[file:khaled_imgs/13.jpg]]
-* Transducers
+* Reducer refactor pt4. - Transducers!
 - Didn't end up being useful.
+- Check out transducers.js or ramdas transducer function. 
 - Cool future use for complex text filters.
 #+BEGIN_SRC js 
 const t = require("transducers.js")
@@ -363,5 +371,5 @@ t.seq({ one: 1, two: 2, three: 3 }, xform);
   - "Build things with knowledge and technique." [[https://www.youtube.com/watch?v=ubaX1Smg6pY&t=4282s][Alan Kay - Is it really "Complex"? Or did we just make it "Complicated"?]]
   - Compose and use basic tools. [[https://www.youtube.com/watch?v=FSbImq-uzFk][MPJ - Coding and Cooking]]
 
-* 
+** Outro
   - Let's keep winning.

@@ -1,4 +1,4 @@
 *.html
 *.tex
 .DS_Store
-_minted-slides/
+_minted-*/
