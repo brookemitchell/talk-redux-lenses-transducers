@@ -1,10 +1,17 @@
 # #+LaTeX_CLASS_OPTIONS: [bigger]
 #+latex_header: \mode<beamer>{\usetheme{metropolis}}
 #+latex_header: \usemintedstyle{rainbow_dash}
+#+latex_header: \title{I've got the keys! Using lenses and transducers simplify your life.}
+#+latex_header: \date{\today}
+#+latex_header: \author{Brooke Mitchell}
+#+latex_header: \documentclass{beamer}
 
+* 
+** I've got the keys! Using lenses and transducers simplify your life.
+   - Brooke Mitchell
+   - https://github.com/brookemitchell
+   - https://twitter.com/brocmit  
 * Welcome
-
-  - I'm Brooke Mitchell. 
 
   - These are my experiences using lenses and transducers to simplify data manipulation in a redux app I built. 
     
@@ -78,6 +85,7 @@ crossProduct(10) // => [13, 20, 5]
 * Redux Reducer
 *** Imaginary redux reducer 
     - nb: List of actions is really provided over time
+    - Explaining Immutability [[https://medium.com/@roman01la/explaining-immutability-2aedc221b4c0][Link]]
 #+BEGIN_SRC js 
 const initialState = {loading: true, filter: all}
 
@@ -90,7 +98,6 @@ const initialState = {loading: true, filter: all}
     }
   },  initialState)
 #+END_SRC
-    - Explaining Immutability [[https://medium.com/@roman01la/explaining-immutability-2aedc221b4c0][Link]]
 
 * DJ Khaled
     #+ATTR_LATEX: width=\textwidth
