@@ -1,9 +1,8 @@
 * Mihi / Greeting
   - Kia ora koutou katoa 
-  - Thank you to the conference organizers and other speakers
-     
-  - Especially those tackling topics, either technically or emotionally and those that address the wider definition of what our community means, sad I can't see them all. This is my first ever talk so thank-you for having me. I think the js community is wide and varied all levels and kinds of experience are important
 
+  - Thank you to jenofdoom, the conference organizers, volunteers, and other speakers. I'm sad I'm missing anna's talk, her elm workshops are part of what got me in to functional programming.
+     
   - I'm Brooke Mitchell. 
 
   - I've a developer who has been using JavaScript in earnest for maybe three years. 
@@ -351,16 +350,16 @@ const mapStateLensToProps = R.compose(
 const t = require("transducers.js")
 
 const xform =  t.compose(
-        t.map(function(kv) { return [kv[0], kv[1] + 10 ]}),
-        t.map(function(kv) { return [kv[0], kv[1] * 9]}),
-        t.filter(function(kv) { return kv[1] % 2 !== 0; }),
+        t.map(function(kv){return [kv[0], kv[1] + 10 ]}),
+        t.map(function(kv){return [kv[0], kv[1] * 9]}),
+        t.filter(function(kv){return kv[1] % 2 !== 0; }),
        )
 
 t.seq({ one: 1, two: 2, three: 3 }, xform);
 // => {one: 99, three: 117}
 #+END_SRC
 
-These could be super useful for speedy filters.
+These could be super useful for something like a complex text filter. 
 
 * Keys conclusion
 
@@ -376,14 +375,3 @@ These could be super useful for speedy filters.
 
 
 
-* Footnotes
-
-[fn:5] [[https://www.youtube.com/watch?v=mVVNJKv9esE][Cheng Lou - On the Spectrum of Abstraction at react-europe 2016]]
-
-[fn:4] DJ Khaled clips and sound
-
-[fn:3] Test this out.
-
-[fn:2] slite showing new object
-
-[fn:1] slide showing mutation

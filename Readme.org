@@ -2,14 +2,20 @@
 #+latex_header: \mode<beamer>{\usetheme{metropolis}}
 #+latex_header: \usemintedstyle{rainbow_dash}
 
-* Mihi / Greeting
-  - Thanks to the conference organizers and other speakers.
+* Welcome
 
   - I'm Brooke Mitchell. 
 
   - These are my experiences using lenses and transducers to simplify data manipulation in a redux app I built. 
     
   - Spoiler... there are tradeoffs when trying to simplify.
+
+* Slides and source code
+
+** Slides
+   [[https://github.com/brookemitchell/talk-redux-lenses-transducers]]
+** Example Project with refactored branches
+   https://github.com/brookemitchell/redux-lenses-example
 
 * Me and Redux
 
@@ -333,8 +339,8 @@ function works(state = initialState, action) {
     #+ATTR_LATEX: width=\textwidth
     [[file:khaled_imgs/13.jpg]]
 * Transducers
-- Didn't end up being that useful.
-- But could be helpful for speedy text filters.
+- Didn't end up being useful.
+- Cool future use for complex text filters.
 #+BEGIN_SRC js 
 const t = require("transducers.js")
 const xform =  t.compose(
