@@ -1,0 +1,361 @@
+# #+LaTeX_CLASS_OPTIONS: [bigger]
+#+latex_header: \mode<beamer>{\usetheme{metropolis}}
+#+latex_header: \usemintedstyle{rainbow_dash}
+
+* Mihi / Greeting
+  - Thanks to the conference organizers and other speakers.
+
+  - I'm Brooke Mitchell. 
+
+  - These are my experiences using lenses and transducers to simplify data manipulation in a redux app I built. 
+    
+  - Spoiler... there are tradeoffs when trying to simplify.
+
+* Me and Redux
+
+** {}
+
+- This isn't a talk about react.
+
+- This talk is a little about my experiences using redux. 
+
+- This is really about {} . Plain old javascript objects, aka pojos.
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:key3.jpg]]
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/keysbook.jpg]]
+* DJ Khaled
+  #+ATTR_LATEX: width=\textwidth
+    [[file:keys_with_picture.jpg]]
+
+* Ramda
+- [[http://ramdajs.com/repl/?v=0.22.1][Ramda Repl]] (http://ramdajs.com/repl/)
+- Auto currying
+#+BEGIN_SRC js 
+const R = require('ramda')
+const addOne = R.map(x => x + 1)
+addone([1, 2, 3]) // => [2, 3, 4]
+#+END_SRC
+* Ramda
+- Composition
+#+BEGIN_SRC js 
+const fn1 = a => a + 3
+const fn2 = b => b * 2
+const twoFns = c => fn2(fn1(c))
+const twoFnsCompose = c => R.compose(fn2, fn1)(c)
+// or pointfree
+const twoFnsComposePf = R.compose(fn2, fn1)
+twoFnsComposePf(0) // => 6
+#+END_SRC
+* Ramda
+- Applicatives
+#+BEGIN_SRC js 
+const fn1 = a => a + 3
+const fn2 = b => b * 2
+const fn3 = c => c / 2
+const crossProduct = R.compose(R.ap[fn1, fn2, fn3], R.of)
+crossProduct(10) // => [13, 20, 5]
+#+END_SRC
+* Redux
+*** Crash course in Redux
+    - There is a 'store' that keeps all of your state in one object 
+    - You can subscribe to store updates to map them to your view. 
+*** Redux steps
+1) You call store.dispatch(action) 
+2) The Redux store calls any reducer functions (called 'reducers') that will make changes to state.
+3) The Redux store replaces the old state tree with a new state tree.
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+   [[file:khaled_imgs/1.jpg]]
+* Redux Reducer
+*** Imaginary redux reducer 
+    - nb: List of actions is really provided over time
+#+BEGIN_SRC js 
+const initialState = {loading: true, filter: all}
+
+['ACTION 1', 'STOP_LOADING', 'ACTION 3']
+  .reduce((state, action) => {
+    if (action.type === 'STOP_LOADING') {
+      return Object.assign({}, state, {loading: false})
+    }
+    else return state
+    }
+  },  initialState)
+#+END_SRC
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/2.png]]
+* Redux Mapper
+  - People typically use libs like react-redux, but lets try...
+#+BEGIN_SRC js 
+import h from 'hyperscript'
+const widgetsList = widgets => 
+  h('div', 
+    h('ul', 
+      widgets.map(w => h('li', w))));
+let divWithState;
+store.subscribe(() => {
+  const currentState = store.getState();
+  divWithState = widgetsList(currentState.widgets);
+})
+#+END_SRC
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/3.png]]
+* Redux Mapper
+  - Same again using nanocomponent...
+#+BEGIN_SRC js 
+const component = require('nanocomponent');
+const html = require('bel');
+const mapStateToProps = state => ({widgets: state.widgets});
+const props = mapStateToProps(store.getState());
+var WidgetList = component({
+  render: function (props) {
+    return html`
+      <ul>${props.widgets.map(
+        e => html`<li>${e}</li>`)}</ul>`
+  }
+});
+#+END_SRC
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/4.jpg]]
+* Refactoring a real app
+** Starting point - Troubled Mapper
+#+BEGIN_SRC js 
+const mapStateToProps = state => {
+  return {
+    user: state.users[state.routeParams.uid]
+    userDetails: state.usersDetails[user.uid] userDetails,
+    noUser: typeof user === 'undefined',
+    name: noUser ? '' : user.info.name,
+    lastUpdatedUser: user ? user.lastUpdated : 0,
+    isFetching: user.isFetching || usersDetails.isFetching,
+    error: users.error || usersDetails.error,
+    ...
+  };
+};
+#+END_SRC
+  
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/5.jpg]]
+* Bad map fix, step 1: create selectors
+#+BEGIN_SRC js
+// selectors.js
+const editing = state => state.works.editing
+const user$ = state => state.users[state.route.uid]
+const editing$ =  R.compose(
+                    R.propOr([], 0),
+                    R.toPairs,
+                    editing)
+//container.js
+export const mapStateTo = (state) => {
+  return {
+    user: user$(state),
+    editing: editing$(state)
+    ...
+  };
+};
+#+END_SRC
+
+# - We could go further but good enough I say, at least these are easily composable and testable now. We could take this even further and create an uber selector that combines all the selectors. 
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/6.jpg]]
+* bad map fix, step 2: Composing with ramda
+- Major key: compose selectors.
+#+BEGIN_SRC js 
+// selectors.js
+export const stateToProps$ = R.compose(
+  R.zipObj(['user', 'error', 'editing']),
+  R.ap([
+    user$,
+    error$,
+    editing$
+    ]),
+  R.of,
+)
+//container.js
+const mapStateToProps = stateToProps$(store.getState())
+  #+END_SRC
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/7.jpg]]
+* Alternative Step 2: Reselect  
+
+#+BEGIN_SRC js
+import { createSelector } from 'reselect'
+const isFetching = createSelector(
+  [ user, userDetails ],
+  (user, userDetails) => user.isFetching 
+    || usersDetails.isFetching,
+)
+
+export const stateToProps$ = createSelector(
+  [name$, userDetails$, error$, editing$],
+  (name, userDetails, error, editing) => 
+    ({name, userDetails, error, editing})
+)
+#+END_SRC
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/8.png]]
+* Alternative Step 2.5: Ramda Reselect  
+- written by me! [http://npmjs.com/ernusame/ramda-reselect]
+#+BEGIN_SRC js
+const createSelector = (...fns) => 
+  R.compose(
+    R.apply(R.memoize(R.last(fns)))),
+    R.ap(R.slice(0, -1, fns))
+    R.of
+  )
+
+#+END_SRC
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/9.jpg]]
+* Awkward reducer
+ - Reducer for the roadworks editing app, 
+
+  - This is the function for setting the new shape of the state called every time an 'action' is dispatched. 
+
+#+BEGIN_SRC js 
+export default function works(state = initialState, action) {
+  switch (action.type) {
+    case WORKS_FETCH_FAILED: {
+      return {
+        ...state,
+        appState: "error",
+        error: action.message
+      };
+    }
+#+END_SRC
+
+* Awkward reducer cont...
+#+BEGIN_SRC js 
+    case SET_TEXT: {
+      const oldItem = state.works[
+        action.changedEntry.id];
+      const newItem = action.changedEntry[
+        action.changedEntry.id];
+
+      const mergedEntry = {
+        works: {
+          ...state.works,
+          [action.changedEntry.id]: {
+            ...oldItem,
+            ...newItem
+          }
+        }
+      };
+#+END_SRC
+* Awkward reducer cont...
+#+BEGIN_SRC js 
+      return {
+        ...state,
+        ...mergedEntry
+      };
+    }
+    default:
+      return state;
+  }
+}
+#+END_SRC
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/10.jpg]]
+* Reducer refactor pt1.
+  - I don't really like this.
+    -- Separation of concerns RANT - MPJ's Musings - FunFunFunction #47
+    https://www.youtube.com/watch?v=0ZNIQOO2sfA
+#+BEGIN_SRC js 
+function setText (state, action) {...}
+export default function works(state = initialState, action) {
+    ...
+    case SET_TEXT: {
+      setText(state, action)
+    }
+    ...
+}
+#+END_SRC
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/11.jpg]]
+* Reducer refactor pt2.
+  - What if we could use selectors in reducers. Interchangable.
+  - x this won't work. But suggests something bigger.
+#+BEGIN_SRC js 
+const editTextReducer = createSelector(
+  state, editing$, 
+  (state, editing) => Object.assign({}, state, {editing})
+)
+
+function works(state = initialState, action) {
+    case SET_TEXT: 
+      return editTextReducer(state)
+      // x this doesn't work
+      };
+    }
+}
+#+END_SRC
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/12.jpg]]
+* Reducer refactor pt3. - Lenses!
+- Now we can use the lens in both places!
+#+BEGIN_SRC js 
+// selector
+const worksItemLens = R.lensPath(["works", id, key]);
+// reducer
+function works(state = initialState, action) {
+    case SET_TEXT: {
+      const { id, key, value } = action
+      const worksItemLens = R.lensPath(["works", id, key]);
+      return R.set(worksItemLens, value, state);
+    }
+}
+#+END_SRC
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/13.jpg]]
+* Transducers
+- Didn't end up being that useful.
+- But could be helpful for speedy text filters.
+#+BEGIN_SRC js 
+const t = require("transducers.js")
+const xform =  t.compose(
+        t.map(function(kv){return [kv[0], kv[1] + 10]}),
+        t.map(function(kv){return [kv[0], kv[1] * 9]}),
+        t.filter(function(kv){return kv[1] % 2 !== 0}),
+       )
+t.seq({ one: 1, two: 2, three: 3 }, xform);
+// => {one: 99, three: 117}
+#+END_SRC
+
+* DJ Khaled
+    #+ATTR_LATEX: width=\textwidth
+    [[file:khaled_imgs/14.jpg]]
+* Major Keys
+  - The key is to have every key.
+  - Don't play yourself.
+  - Stay away from they.
+  - Think about refactoring as a spectrum of abstraction. [[https://www.youtube.com/watch?v=mVVNJKv9esE][Cheng Lou - On the Spectrum of Abstraction]]
+  - "Build things with knowledge and technique." [[https://www.youtube.com/watch?v=ubaX1Smg6pY&t=4282s][Alan Kay - Is it really "Complex"? Or did we just make it "Complicated"?]]
+  - Compose and use basic tools. [[https://www.youtube.com/watch?v=FSbImq-uzFk][MPJ - Coding and Cooking]]
+
+* 
+  - Let's keep winning.
