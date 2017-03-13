@@ -1,401 +1,272 @@
-* Welcome
- - Kia ora koutou . I'm Brooke Mitchell and this is my talk, I've got the keys.
+* Intro
+
+- Kia ora koutou . I'm Brooke Mitchell and this is my talk, I've got the keys! Using lenses and transducers simplify your life.
     
- - Thank you to jenofdoom, the conference organizers, volunteers, and other speakers. I'm sad I'm missing anna's talk, her elm workshops are part of what got me in to functional programming.
-     
-- I've a developer who has been using JavaScript in earnest for maybe three years. 
+- Thanks for having me for my first ever talk.
 
-- These are my experiences using lenses and transducers to simplify data manipulation in a redux app I built. 
+- These are my experiences trying to simplify data manipulation in a redux app I built. 
 
-- This talk is pretty code example heavy but try not to get too caught up in following every detail about what it happening. Just know that we're trying abstractions to manage objects and evaluating their usefulness. If you get interested you can try the examples from the slides in ramda repl later
-     
-- Since long code examples make me sleepy. There are helpful talk themed breaking them up. Try to focus on those.
+* Welcome
 
-* Me and Redux
+- This talk is pretty code example heavy but try not to get too caught up in following every detail about what it happening. 
 
- - So my last year I have been pretty heavily focused on react and redux. Don't worry this isn't a talk about react. This talk is a little about my experiences using redux. Really this talk is really about how to deal with pojos (plain old JavaScript objects) (A.K.A dictionaries, hash-maps) something we all use. 
+- Since long code examples make me sleepy. There are helpful talk themed images breaking them up. Try to focus on those.
 
- -  I think dictionary manipulation can seems to be one of the less glamorous corners of functional programming; which is actually handy because it skips a lot of prior knowledge expected and you should be able to use any of these techniques in your day-to-day programming. One thing you will notice when using redux, the architecture tends to channel you towards functional approaches, I think is largely due to the inspiration takes from the ELM architecture.
+* Slides and source code
 
- -  So since this talk is about my experiences using objects, this talk is about how we access properties in objects, through keys.  They are the items that you provide to a hash function that unlock associated values. So and when we talk about keys, there is something slightly magical and metaphorical about them. For that reason I have been thinking about keys a lot, and so it made sense to consult the master of keys, the one and only, DJ Khaled.
-  
-...play jay-z - the keys clip...
-    https://www.youtube.com/watch?v=SFLSOIufuhM&feature=youtu.be&t=38s
+- The focus of this talk is on trying functional techniques to manage objects and evaluating their usefulness. 
 
- - For those unfamiliar with the work of DJ Khaled, you could briefly describe him as a music mogul and internet celebrity. Perhaps his most impressive skill is to act like a human hash function, and I mean that in a positive way. He can make a meaningful connection between any two people. Say you need Jay-Z and Snoop Dogg to catch a plane to your studio talk to DJ Khaled. So while Khaled is an important music producer, snapchat celebrity, motivational speaker but most importantly for this talk, he also someone who talks a lot about keys.  
+- If you get interested you can try the examples from the slides in a ramda repl later. 
 
-- Khaled describes his steps to success as 'keys' that open access to other keys, our path to success will also be like a deeply nested JSON response, (lame joke), so let's get started.
-      
+- These are the github projects for the talk and the example project with all the links and things I will probably forget to say. This talk doubles as it's own readme file. So you can trust yourself not to take notes.
+
+* Redux and keys
+
+- So we'll have to cover a little bit of ground before we start, both in understanding enough redux and functional techniques we'll be using before we start. This might seem like a lot, but we are about to learn redux is mostly about managing one large object we call state. 
+
+- this talk should hopefully also teach you functional ways to deal with pojos (plain old JavaScript objects)
+
+-  And since this talk is about objects, we'd better talk about how we access properties in objects, through keys. 
+
+- When we talk about keys, I think there is something slightly magical and metaphorical about them. For that reason I have been thinking about keys a lot, and so it made sense to include someone that also talks about keys a lot, a hip-hop producer named DJ Khaled.
+
+* DJ Khaled
+
+ - play jay-z - the keys clip...
+
+- For those unfamiliar with the work of DJ Khaled, you could briefly describe him as a music mogul and internet celebrity. While DJ Khaled is a famous music producer and snapchat celebrity, most importantly for this talk, he has a life philosophy based around 'keys' to success. So we'll be talking about keys in both senses, managing objects and lifelong learnings. Despite the gimmicky theme that's what I'm getting at.
+
 * Ramda
-- I'm going to use the Ramda library and es6 style functions in the examples in this talk. Just know that every any library should have these tools.
 
-- I know we should be wary of tool dependence here, but ramda is a useful grab bag of mostly time honoured functional programming tricks that it is handy to be aware of. So I feel any time you spend learning it will be useful in other libraries and languages. Many other libraries do the same thing and they should be able to be used interchangeably.
+- I'm going to use the Ramda library for nearly everything in the examples in this talk. any functional library you use, or one you even make up yourself, should have these tools. 
 
-- These are techniques  you're going to see a lot in this talk. Most of the code it's only necessary to get the gist of, but if you want to pay attention now would be a good time.
+- I know we should be wary of tool dependence here, but ramda is a useful grab bag of time honoured functional programming tricks that it is handy to know. So I feel any time you spend learning it will be useful in other libraries and languages. Many other libraries do the same thing and they should be able to be used interchangeably.
+
+- These are three functional techniques from ramda you're going to see a lot in this talk. Most of the other code examples you'll only need the gist of, but if you want to pay attention now would be a good time.
   
-  - So the amazingly useful functional features we'll be always using are:
+- So the first amazingly useful functional trick we'll using is: 
 
-- auto-currying ... look at example
+- Auto-currying. Comes by default in ramda, no effort required. This means you can provide one argument at a time to get a back a function waiting for the next argument.
 
-- function composition 
+* Ramda
 
-- And applicatives. Perhaps the one people are least like to have seen before. I think of applicatives most of the time when I use them as way to take a list of functions and replacing the functions with their application. There are other many other ways to use their powers but that's all we require here.
+- Function composition. Perhaps the biggest key alert, composition is the key of keys. Take a bunch of nested functions and you can lay them out as arguments in the same order as you see them nested. Now you can really go to town stacking them up. They build up from the right, just like the nested function whose first call is from the inside. You can also use pipe if you prefer thinking forwards.
+
+
+* Ramda
+
+- R.ap, perhaps the one people are least likely to have seen before
+
+- It's related to applicatives. Don't worry about that. Haskell fans might want to talk to you about their power but here we're just going to use them in a simple way, taking a list of functions , and applying them to an argument, ten in this case. It returns an list of results from applying each function to each argument. 
+
+- There many other ways to use ap's powers but that's all we require here.
 
 * Redux
-*** Crash course in Redux
- - Anyway back to the app I was building. Sadly it was built for a closed source environment. But here is a smaller toy example that also shows some of the problems that as redux apps get larger. 
+
+Anyway back to the app I was building. Sadly all my efforts were spent on an internal tool for a closed source environment. But I've made you an that also shows some of the problems that as redux state gets really large.
 
  ...Show app.
+ 
+- The problem with this app is because the state tree is large, and redux forces you to return a new object every time, editing values gets slow. If you run this example on the master branch chrome warns you the response time for ui is > 300 ms.
 
-Before I show some of the refactorings I think are useful for dealing with objects, I'll try and offer as quick an overview of redux as possible. Please don't be mad if you are a redux expert.
+ - Two things you could do to fix that: 
+- use immutable data structures like immutable.js 
+
+- or break up your subscriptions to state changes much further down the component tree. So we have many subscriptions interested in smaller sets of changes.
+
+- But lets not do either. Instead of doing that lets just refactor and see what falls out. 
+
+- Major key: See what you can ignore. More a tip for programming than for life.
+
+- Before I show some of the refactorings I think are useful for dealing with objects, I'll try and offer as quick an overview of redux as possible. Please don't be mad if you are a redux expert.
 
 - Here is the redux app flow from 10,000 feet: 
+
 - There is a 'store' that keeps all of your state in one object 
 - You can subscribe to store updates to map them to your view. 
 
+  You can also dispatch actions to change the state.
 1. You call store.dispatch(action)
 2. The Redux store calls any reducer functions (called 'reducers') that will make changes to state.
 3. The Redux store replaces the old state tree with a new state tree.
    
-Hopefully my overview shows you that redux is very similar to mapping and reducing in vanilla js. That's pretty much it, talk over.
-
-- So when building a redux app, apart from the boilerplate, you are essentially doing only two things, writing reducers to hanlde updates and mapping that state to your view. Thats it, reducing and mapping an object.
+Hopefully my overview shows you that redux is very similar to mapping and reducing in vanilla js. That feels like enough learning for today.
 
 * Redux Reducer
 
-Coincidentally a 'reducer' in redux is effectively a 'reduce' for state, I like to think of it like so...
+- Coincidentally a 'reducer' in redux is effectively like an array.'reduce' for a state object, I like to think of it like so...
 
-#+BEGIN_SRC js 
-const initialState = {loading: true, filter: all}
-
-['ACTION 1', 'STOP_LOADING', 'ACTION 3']
-  .reduce((state, action) => {
-    if (action.type === 'STOP_LOADING') {
-      return Object.assign({}, state, {loading: false})
-    }
-    else return state
-    }
-  },  initialState)
-#+END_SRC
-
-In reality that list of actions is provided by redux's dispatch function and unfolds over time, more like an observer, but I think its a good way to conceptualize it.
+- In reality that list of actions is provided by redux's dispatch function and unfolds over time, one action at a time, so its like an observer, but I think its a good way to conceptualize it.
 
 Take special note of the line that looks like this:
 #+BEGIN_SRC js 
 return Object.assign({}, oldObject, newObject)
 #+END_SRC
 
-- Major key alert: don't mutate your state in a reducer. It will be ignored anyway in the diff comparison. What is mutation? Here are some links properly discussing mutation on my slides which you can grab on github. [[https:github.com/brookemitchell][link]]. Anyway the opposite of mutability is immutability, what is immutability, basically it means keys and values of an object are unchangeable. In practice that means we need to return a fresh new copy of the object every time.
+- Major key alert: don't mutate your state in a reducer. It will be ignored anyway in the diff comparison. 
+
+- there's a poorly underlined link properly discussing mutation. Basically it means keys and values of an object are unchangeable. In practice that means we need to return a fresh new copy of the object every time.
 
 * Redux Mapper
-     
-  - ok now for the mapper.
-  - People typically use libs like react-redux, but lets try a redux mapping of state to a html output, this is pretty low-level and in reality react users tend to use higher-order-components like react-redux connect, but just to show you that you could happily use redux store in any scenario.
 
-This is a state mapper in hyperscript, a handy way to generate dom nodes directly.
-#+BEGIN_SRC js 
-import h from 'hyperscript'
+- OK now for the mapper. Often called mapStateToProps as a convention.
+- This is how you show your view derived from redux state.
+- Just a note that you dont need to use react with redux
+- This is a state mapper using nanocomponent. 
+- An very cool new component library implements react fiber for super fast components but... works on any framework or on its own. Its comparable with all the frameworks and x-to-js compilers (even elm) and frees us from writing the same components like inifite list each time a new framework is out. I really like this.
 
-const widgetsList = widgets => h('div', h('ul', widgets.map(w => h('li', w))))
-let divWithState = h('div', h('text', 'loading...'))
-store.subscribe(() => {
-  const currentState = store.getState()
-  divWithState = widgetsList(currentState.widgets)
-})
-#+END_SRC
+Let's finally get to our app.
 
-I think writing functions instead of jsx is pretty cool. JSX is cool too though.
-
-State mappers are pretty much exactly the same for all libraries, I think of them like a .map where you plucks the desired items for an object. 
-
-* Redux Mapper 2
-
-This is a state mapper using nanocomponent. An very cool new component createion library that runs on any framework and performs well (using the same optimizations as react fiber). It should be compatable with all the frameworks and x-to-js compilers (even elm) and frees us from writing the same components like inifite list a zillion times.
-
-#+BEGIN_SRC js 
-const component = require('nanocomponent')
-const html = require('bel')
-
-const mapStateToProps = state => ({widgets: state.widgets})
-const props = mapStateToProps(store.getState())
-
-var WidgetList = component({
-  render: function (props) {
-    return html`
-      <ul>${props.widgets.map(e => html`<li>${e}</li>`)}</ul>
-    `
-  }
-})
-#+END_SRC
-
-Anyway dispatch, reduce, map. That is my summary of redux, so enough of that.
+- So two things we care about: reducing and mapping an immutable object. That is my summary of redux that should get us there.
 
 * Refactoring a real app
-- Hopefully you can now see that setting state is the same as applying a reducing function, and getting state is similar to a mapping over state and plucking entries you care about out.
 
-- And here is a troubled mapper. In my toy example as is often the case things weren't looking real world enough, so I decided to implement some feature creep, user management and routing. Again you dont need to read this, just get a bad feeling that all this logic shouldn't really be in a view.
-
-#+BEGIN_SRC js 
-const mapStateToProps = state => {
-  return {
-    user: state.users[state.routeParams.uid]
-    userDetails: state.usersDetails[user.uid] userDetails,
-    noUser: typeof user === 'undefined',
-    name: noUser ? '' : user.info.name,
-    lastUpdatedUser: user ? user.lastUpdated : 0,
-    isFetching: user.isFetching || usersDetails.isFetching,
-    error: users.error || usersDetails.error,
-    ...
-  };
-};
-#+END_SRC
-- For a quick glance this looks like way too much business logic to have in a view. Also all this nested parameter access is sure to cause runtime errors if a property isn't available at a certain point in time. Key alert: use ramda/lodash 'get' instead.
+- Here is the examples troubled mapper. I decided to implement some feature creep by adding user management. Again you dont need to read this, just get a bad feeling that all this logic shouldn't really be in a view.
   
+- Also I'm sure one of these deeply nested prop accesses will fail.
+
+- Key alert: you can use ramda/lodash 'get' instead to avoid throwing errors.
+  
+- Let's start refactoring this.
+
 * Bad map fix, step 1: create selectors
-- The first step taken is usually to get this property access out of the view and somewhere else. Usually I just make a selector file and work from there, it helps with testing, and we remove the any logic or intermediary functions from the view.
 
-#+BEGIN_SRC js 
-// selectors.js
-const user = state => state.users[state.routeParams.uid]
-const noUser = state =>  typeof user(state) === 'undefined'
-const works$ =  state => state.works.works
-const editing = state => state.works.editing
-const editing$ =  R.compose(R.propOr([], 0),
-                                   R.toPairs,
-                                   editing)
+  - My first step is to create selectors to get this property access out of the view and somewhere else. 
 
-//container.js
-export const mapStateTo = (state) => {
-  return {
-    name: name$(state),
-    userDetails : userDetails$(state),
-    error: error$(state),
-    editing: editing$(state)
-  };
-};
-#+END_SRC
+- Usually I just make a selectors section next to my reducer, and work from there, it helps with testing, and we remove the any logic or intermediary functions from the view.
 
-- We could go further but good enough I say, at least these are easily composable and testable now. We could take this even further and create an uber selector that combines all the selectors. 
+- We could go further but this is pretty good, at least these are easily composable and testable now. 
+
+- One thing we could do is take this even further and compose a mapStateToProps function in the reducers file, one that combine all the selectors. 
 
 * Bad map fix, step 2: Composing with ramda
+
+- Which is this
+
+- Here we are treating our functions as applicatives then zipping them together into an object for our view.
+
+- We can keep looking common property access and compose selectors together. You might find you'll doing one kind of property access in many places.
+
+- Wayyy sweeter. tbh this is probably the sweet spot. Go deeper if needs require.
+
 Major key: compose selectors.
 
-#+BEGIN_SRC js 
-// selectors.js
-export const stateToProps$ = R.compose(
-  R.zipObj(['editing', 'works']),
-  // or R.memoize(R.zipObj(['editing', 'works'])),
-  R.ap([
-    name$,
-    userDetails$,
-    error$,
-    editing$
-    ]),
-  R.of,
-)
-
-//container.js
-const mapStateToProps = stateToProps$(store.getState())
-  #+END_SRC
- - Wayyy sweeter. tbh this is probably the sweet spot. Go deeper if needs require.
-
 * Alternative Step 2: Reselect
-_ The alternative route to composing selectors is to use a selector library like reselect. 
 
--  You get the same ability to compose selectors in a library. You also get the win of createSelector memoizing the results for you. This means that if anytime the result from all the selectors is the same, createSelector doesn't bother calculating the state again, this should save a few cpu cycles but in my experience often doesn't offer major speed ups, not like a virtualdom-diff for example, but it's still nice not to create a new object every time.
+-   The alternative to composing selectors yourself is to use a library like reselect, to do the selector composition. 
 
-#+BEGIN_SRC js
-import { createSelector } from 'reselect'
-const isFetching = createSelector(
-  [ user, userDetails ],
-  (user, userDetails) => user.isFetching || usersDetails.isFetching,
-)
+- My issue with reselect is it re-invents the wheel a bit when you could just take the time to learn composition and not sweat the difference when frameworks change.
 
-export const stateToProps$ = createSelector(
-  [name$, userDetails$, error$, editing$],
-  (name, userDetails, error, editing) => ({name, userDetails, error, editing})
-)
-#+END_SRC
+- However one free win you get with reselect is it memoizes the final function for you. This means that if anytime the result from all the selectors is the same, createSelector doesn't bother calculating the state again, it just returns the stored value for state it keeps in memory.
+
+so key alert: Memoizing, saves you effort, sometimes. 
+
+- But I'm just not sure we should let libraries do our composition, so I also have an alternative.
 
 * Alternative Step 2.5: Ramda Reselect
-      
-- My issue with reselect is it re-invents the wheel a bit when you could just take the time to learn composition and not sweat the difference when frameworks change.
-      
 
-- Ok so this is my version, and its very close, and probably good enough for most scenarios. 
+- Compose your own reselect.
 
-- We could just as easily use composition to create similar functionality and keep a lot of flexibility. In fact here is the same functionality as what I need from reselect, selector composition, in a ramda one-ish liner using applicatives. Try not to read this too carefully and just get a feeling that we've just composed together our own reselect library from existing pieces.
+- What you could do instead though is write it you self. 
 
-#+BEGIN_SRC js
-const createSelector = (...fns) => 
-  R.compose(
-    , R.apply(R.memoize(R.last(fns))))
-    , R.ap(R.slice(0, -1, fns))
-    R.of
-#+END_SRC
+- Ok so this is my version of reselect in what could be one line,  and probably good enough for most scenarios. 
 
 - This does the same thing as createSelector, takes the state, runs it through a list of selectors (except the last one) then applies those values to the last function, which has been memoized.
 
-- Now we also get memoize and we dont have to learn another library. There are other capabilities reselect has which I've never used. Like props, you'll notice I pretty much never use props.
+- Now we dont have to learn another library. There are other capabilities reselect has which I've never used. Like props, you'll notice if you go through my example that I pretty much never use props in components that subscribe to state changes.
 
-- Thats another key I've found, focus on state for stateful components and just use props with pure components to keep things simple. Things don't always work out that way but I find that really helps keep things simple. 
+- Thats another key I've found, focus on state for stateful components and just use props with pure components to keep things simple. Things don't always work out that way but I find that really helps me.
 
-- I have a more fully featured version of ramda-reselect that lets you use props. It passes all vanilla reselects tests in case you ever want to use it, or hopefully just look at the source, it bumps the lines up to about 10. npm.com/ernusame/ramda-reselect
-  
+- I have a more fully featured version of ramda-reselect that lets you use props and passes reselects tests. Its up there as a npm library in case you ever want to use it, or hopefully just look at the source, taking props bumps the lines of code to about three. Hopefully gives you an idea of the power of composing.
+
+* Alternative Step 2.5: Ramda Reselect
+
 - So I feel like we've slimmed down our mapper pretty nicely.
 
 Now lets take a look at our reducer.
 
-* Refactoring reducer
+* Awkward reducer
 
- - Here is the real reducer for the roadworks editing app, this is the function for setting the new shape of the state called every time an 'action' is dispatched. 
+ - Here is the real reducer for the roadworks editing app, this is the function for setting the new shape of the state called every time an 'action' is dispatched. Sorry its so long please allow your eyes to glaze over. 
+   
+- Where the slowness is coming from.
 
-#+BEGIN_SRC js 
-export default function works(state = initialState, action) {
-  switch (action.type) {
-    case WORKS_FETCH_FAILED: {
-      return {
-        ...state,
-        appState: "error",
-        error: action.message
-      };
-    }
-    case SET_TEXT: {
-      const oldItem = state.works[action.changedEntry.id];
-      const newItem = action.changedEntry[action.changedEntry.id];
+- Those ellipsis are a proposed es2017 shortcut to spread an object. You can think of those as the same as an object assign. That assign is what  the slowness is.
 
-      const mergedEntry = {
-        works: {
-          ...state.works,
-          [action.changedEntry.id]: {
-            ...oldItem,
-            ...newItem
-          }
-        }
-      };
+* Reducer refactor pt1
 
-      return {
-        ...state,
-        ...mergedEntry
-      };
-    }
-    default:
-      return state;
-  }
-}
-#+END_SRC
+- Anyway that reducer is obviously too much to feel good about. The advice you see in the redux docs is to to break functions out, and I think you can easily see how to do that. 
 
-* Reducer refactor pt1.
-- I think this is a little much for one function. The advice from redux is to break functions out, and I think you can easily see how to do that. To me breaking out functions feels a little dishonest.  It makes things easier to read but doesn't actually reduce complexity, now you just look in a different place, making reasoning easier is really what we want.
+- To me breaking out functions feels a little dishonest.  It looks nice but to me doesn't actually reduce complexity, now you just look in a different place. You have more loc and a single use function. Maybe inlining is fine and more honest.
 
-#+BEGIN_SRC js 
-function setText (state, action) {...}
+  - Major key - be honest, don't play yourself.
 
-export default function works(state = initialState, action) {
-    ...
-    case SET_TEXT: {
-      setText(state, action)
-    }
-    ...
-}
-#+END_SRC
-* Reducer refactor pt2.
--  How about trying something else, an abstraction that allows you to target a specific part of a deeply nested object, then returns the entire object. How about something else that seems obvious but I never see. What if we could use our selectors in a reducer. This won't work. But I'm getting a feeling there is an abstraction for focusing on a section of an object for a wide range of operations.
+* Reducer refactor pt2
 
-#+BEGIN_SRC js 
-export const editTextReducer = createSelector(
-  state, editing$, 
-  (state, action) => Object.assign({}, state, {editing})
-)
+-  How about trying something else, to actually reduce code.
 
-export default function works(state = initialState, action) {
-    case SET_TEXT: 
-      return editTextReducer(state, action)
-      };
-    }
-}
-#+END_SRC
+- What if we had an abstraction that allows you to target a specific part of a deeply nested object
+
+- What if we could use our selectors, as reducers.
+
+- This won't work. The redux api isn't really designed around this. But I'm getting a feeling we need an abstraction that focuses on a section of an object that could be very useful for both mappers and reducers.
 
 I'm talking about...
+
 * Reducer refactor pt3. - Lenses!
-- Now we can use the lens in both places!
-#+BEGIN_SRC js 
-// selector
-const worksItemLens = R.lensPath(["works", id, key]);
-// reducer
-function works(state = initialState, action) {
-    case SET_TEXT: {
-      const { id, key, value } = action
-      const worksItemLens = R.lensPath(["works", id, key]);
-      return R.set(worksItemLens, value, state);
-    }
-}
-#+END_SRC
-     - Here is a rewrite of the SET_TEXT actions reducing case.
 
-#+BEGIN_SRC js 
-// reducer
-    case SET_TEXT: {
-      const { id, key, value } = action
-      const worksItemLens = R.lensPath(["works", id, key]);
-      return R.set(worksItemLens, value, state);
-    }
-#+END_SRC
+- Now we can use one abstract for bother mappers and reducers.
 
-To me this is way cleaner. And get ready for the second win, your lenses act as both getters and setters, so you get selectors for free when you write them. Major key. I stop thinking in terms of reducers now and just think of writing a selector as a lens when I need something, compose lenses together for my mapStateToProps,  and later I can use it to set the change I've dispatched in the reducer.
+- To me this is way cleaner. And get ready for another one, your lenses act as both getters and setters, so you get two for one when you write them. Major key, do more with less code. 
 
-One of the fun things about lenses is they look like they compose left to right. It's a little confusing  
+- I can stop thinking in terms of reducers now and just think of writing a selector I'll use later to set the value too.
 
-#+BEGIN_SRC js
-// component container
-const prefixWorks = e => R.compose(R.lensProp('works'), e)
-const allViews = R.map(
-  R.compose(R.view, prefixWorks),
-  [errorLens, editingLens, worksLens])
+- And amazingly our performance has gone away. 
 
-const mapStateLensToProps = R.compose(
-  R.zipObj(['error', 'editing', 'works']),
-  R.ap(allViews),
-  R.of,
-)
-#+END_SRC
+- Be aware of the tradeoffs.
 
-  - Damn and its faster. This is pretty nice to look at, although we have to be aware of the tradeoffs. Lenses don't compose as well and require a context switch in thinking. I'm not sure it's often worth it.
+- One of the fun things about lenses is they look like they compose left to right. It's a little confusing  
+
+- I find working with lenses to be a mental context switch. Depending on the situation it's not always worth it. Composed functions are often good enough.
+  
+- But what if we want to go deeper abstracting our reducer. We could try lenses cousins.
 
 * Reducer refactor pt4. - Transducers!
-     - One last thing to try 
 
-     - Ok the title of this talk promised that there would be transducers as well. But as I was working with tranducers I was finding that they weren't quite right for my use case and I ended up reverting a large chunk of the code base and focusing on composition instead.
+- Ok the title of this talk promised that there would be transducers as well. 
 
-     If you have code that is performing a large number of transformations on data. You can make good performance gains by using transducers. Transducers generalize the reducing function, passed to a reducer, so that transformations can be composed. It's also data structure agnostic. Swapping reducer functions for transducers is definitely an interesting area but I feel like I'm running out of time anyway.' Check out transducers.js or ramdas transducer function. It is excellent for situations like this
+- If you have code that is performing a large number of transformations on data transducers make sense. 
+- Transducers do this by generalizing your functions to all look like the kind of functions that you would pass to a reducer, composing that function and placing it inside a reducer. 
 
-#+BEGIN_SRC js 
-const t = require("transducers.js")
+- I tend to think of composition like creating a tiny conveyer belt, transducing however is s kind of like putting all your functions in a blender.
 
-const xform =  t.compose(
-        t.map(function(kv){return [kv[0], kv[1] + 10 ]}),
-        t.map(function(kv){return [kv[0], kv[1] * 9]}),
-        t.filter(function(kv){return kv[1] % 2 !== 0; }),
-       )
+- What transducers offer is another performance boost when you compose functions together. They do this by skipping intermediate memory allocation. 
 
-t.seq({ one: 1, two: 2, three: 3 }, xform);
-// => {one: 99, three: 117}
-#+END_SRC
+- This is pretty mind bending to me.
 
-These could be super useful for something like a complex text filter. 
-But in my case we dont have a that need yet. I started refactoring all our reducers -> transducers in the original codebase but it quickly became apparent it wasn't going to be great for ongoing maintenance.
+- I was working replacing reducers with tranducers in our code base to speed things. I was finding that they weren't quite right for my use case and I ended up reverting a large chunk of the code base and focusing on composition instead. 
+
+- You can't always win.
+
+- Swapping reducer functions for transducers is definitely an interesting area but I feel like I'm running out of time anyway.' Check out transducers.js or ramdas transducer function. 
+
+- It would be excellent for complex text filters and form validation.
+
+- But in my case we dont have a that need yet. 
 
 * Keys conclusion
 
- - So by 'keys' I mean two things, the first, more obviously, is the meaning of keys items to access values in an object. Secondly I mean keys in DJ Khaled's sense, as ways to open doors to further success. These are some of the more abstract pieces of advice based on things that I have learned, and based on Dj Khalid's key taxonomy, can be roughly divided into minor and major keys. Minor keys are often called 'tips' and concrete examples of things you can do to improve experience, things like, 'enable redux developer tools' or 'always surround yourself with pillows' that are practical tips based that can be directly copied to similar scenarios.
-   
-- I've tried not to say that a technology or a technique is a key, I dont think lenses are better than mapping for example. Lenses have a lot of pitfalls and can be way overkill. But the approach that they represent, of simplifying by looking for similarity between mapping and reducing to refactor code is the key that I like. 
-      
- - Major Keys, tend to be concepts that are higher up on the levels of abstraction. Link Cheng Lou on the spectrum of abstraction, very important talk, (power === access to other tree levels) these have more universal principles but are are harder to describe in concrete terms, they are often highly metaphorical or strange sounding in terms of domain specific language. for example 'secure the bag' or 'keep two kitchens running'. They may sound nonsensical without the appropriate knowledge but these kinds of advice are similar to old sayings, like 'yagni' in programming and take extra effort to apply to a concrete case but have a larger amount of potential.
-   
- - Alan Kay - Build things with knowledge and technique. Using a higher level form can remove loc in orders of magnitude, depending on choice of abstraction.
-   
-- I wish you the best of luck and may you all keep winning.
-https://www.youtube.com/watch?v=GGXzlRoNtHU
+- So thank you for listening to my first ever talk.
+  
+- Some things to take away.
+  - The key is to have every key. Learn a bunch of techniques and compose them.
+  - Don't play yourself. Refactor honestly, don't do unnecessary work.
+  - Stay away from they. Don't get discouraged if things don't work out or listen to the nay-sayers.
 
+- Here are links to some talks inspired this one. 
+
+** Outro
+
+- I wish you the best of luck and may we all keep winning.
+  play outro...
 
